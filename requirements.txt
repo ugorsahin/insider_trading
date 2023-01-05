@@ -1,0 +1,6 @@
+yfinance==0.2.3
+pandas==1.5.2
+numpy==1.24.1
+seaborn==0.12.2
+git+https://github.com/ugorsahin/mplfinance.git@markersize_validator_fix
+jupyter
