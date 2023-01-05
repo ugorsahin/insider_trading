@@ -14,34 +14,34 @@ class StockViewer:
     table_colors = sns.color_palette(n_colors=30)
 
     def __init__(self, insider_path):
-        csv_files = glob.glob(os.path.join(insider_path, "*.csv"))
+        csv_files = glob.glob(os.path.join(insider_path, '*.csv'))
         self.stocks = {}
         for csv_file in csv_files:
-            stock_name = csv_file.split("/")[-1][:-4]
+            stock_name = csv_file.split('/')[-1][:-4]
             insider_data = InsiderDataFrame(pd.read_csv(csv_file))
             insider_data.Date = pd.to_datetime(insider_data.Date)
-            insider_data["Value"] = insider_data["Value ($)"].apply(
-                lambda x: float(x.replace(",", "")) if isinstance(x, str) else x)
-            insider_data["Share"] = insider_data["Shares"].apply(lambda x: float(
-                x.replace(",", "")) if isinstance(x, str) else x)
+            insider_data['Value'] = insider_data['Value ($)'].apply(
+                lambda x: float(x.replace(',', '')) if isinstance(x, str) else x)
+            insider_data['Share'] = insider_data['Shares'].apply(lambda x: float(
+                x.replace(',', '')) if isinstance(x, str) else x)
             self.stocks[stock_name] = {
-                "insider_data": insider_data, "insider_size": len(insider_data)}
+                'insider_data': insider_data, 'insider_size': len(insider_data)}
 
     def get_insider_data(self, ticker_name):
         if (stock_dict := self.stocks.get(ticker_name)) is None:
             raise KeyError("Stock Ticker doesn't exist in database")
-        return stock_dict["insider_data"]
+        return stock_dict['insider_data']
 
-    def get_ticker_data(self, ticker_name, start_date="2021-01-01", end_date="2023-01-01", force_download=False):
+    def get_ticker_data(self, ticker_name, start_date='2021-01-01', end_date='2023-01-01', force_download=False):
         if (stock_dict := self.stocks.get(ticker_name)) is None:
             raise KeyError("Stock Ticker doesn't exist in database")
 
-        if (not force_download) and (stock_data := stock_dict.get("stock_data")) is not None:
+        if (not force_download) and (stock_data := stock_dict.get('stock_data')) is not None:
             return stock_data
 
         stock_data = StockDataFrame(yf.download(
             ticker_name, start_date, end_date))
-        self.stocks[ticker_name]["stock_data"] = stock_data
+        self.stocks[ticker_name]['stock_data'] = stock_data
         return stock_data
 
     @staticmethod
@@ -62,10 +62,10 @@ class StockViewer:
 
     def get_stock_insider_data(self, ticker_name, **kwargs):
         # Arguments for redownload data and week transformation
-        force_download = kwargs.get("force_download") or False
+        force_download = kwargs.get('force_download') or False
         # Select relative start and end dates for the stock
-        bw_delta = kwargs.get("backward_timedelta") or 120
-        fw_delta = kwargs.get("forward_timedelta") or 120
+        bw_delta = kwargs.get('backward_timedelta') or 120
+        fw_delta = kwargs.get('forward_timedelta') or 120
 
         # Find the stock by ticker name
         insider_data = self.get_insider_data(ticker_name)
@@ -82,36 +82,36 @@ class StockViewer:
         return stock_data, insider_data
 
     def get_indicators(self, stock_data, **kwargs):
-        bollinger = kwargs.get("bollinger") or False
-        ema = kwargs.get("ema") or False
-        ma = kwargs.get("ma") or False
+        bollinger = kwargs.get('bollinger') or False
+        ema = kwargs.get('ema') or False
+        ma = kwargs.get('ma') or False
 
         indicators = {}
         if bollinger:
             b_upper, b_lower = self.get_bollinger_bands(stock_data['Close'])
             indicators.update({
-                "b_upper": b_upper,
-                "b_lower": b_lower
+                'b_upper': b_upper,
+                'b_lower': b_lower
             })
         if ema:
-            ema_values = kwargs.get("ema_values") or [20]
+            ema_values = kwargs.get('ema_values') or [20]
             for ema_span in ema_values:
                 ema_line = self.get_exponential_moving_average(
                     stock_data['Close'], ema_span)
-                indicators[f"ema_{ema_span}"] = ema_line
+                indicators[f'ema_{ema_span}'] = ema_line
         if ma:
-            ma_values = kwargs.get("ma_values") or [20]
+            ma_values = kwargs.get('ma_values') or [20]
             for ma_span in ma_values:
                 ma_line = self.get_moving_average(stock_data['Close'], ma_span)
-                indicators[f"ema_{ma_span}"] = ma_line
+                indicators[f'ema_{ma_span}'] = ma_line
         return indicators
 
     def plot_stock_data(self, ticker_name=None, stock_data=None, insider_data=None, **kwargs):
-        volume = kwargs.get("volume") or False
-        style = kwargs.get("style") or "classic"
-        marker_pwr = kwargs.get("marker_pwr") or 0.35
-        figsize = kwargs.get("figsize") or (40, 10)
-        weekly = kwargs.get("weekly") or False
+        volume = kwargs.get('volume') or False
+        style = kwargs.get('style') or 'classic'
+        marker_pwr = kwargs.get('marker_pwr') or 0.35
+        figsize = kwargs.get('figsize') or (40, 10)
+        weekly = kwargs.get('weekly') or False
 
         if ticker_name is None and (stock_data is None or insider_data is None):
             raise RuntimeError(
@@ -137,9 +137,9 @@ class StockViewer:
         for idx, _person in enumerate(insider_data):
             for t_name, dframe in _person.items():
                 person_scatter = mpf.make_addplot(
-                    dframe["Cost"], type="scatter",
+                    dframe['Cost'], type='scatter',
                     color=self.table_colors[idx],
-                    markersize=dframe["Value"] ** marker_pwr,
+                    markersize=dframe['Value'] ** marker_pwr,
                     marker=MARKER_MAP[t_name],
                     ylim=(y_min, y_max))
                 plots.append(person_scatter)
@@ -158,7 +158,7 @@ class StockViewer:
         between {timify(stock_data, 0)} - {timify(stock_data, -1)}"""
 
         _, axis = mpf.plot(
-            stock_data, type="candle", style=style, volume=volume,
+            stock_data, type='candle', style=style, volume=volume,
             figsize=figsize, addplot=plots, returnfig=True, title=title, ylim=(y_min, y_max))
 
         # If requested view is weekly, every week will have a minor gridline
@@ -282,7 +282,7 @@ def summarize_occurences(stock_pattern, insider_data):
     sum_arr = np.zeros(len(CANDLE_PATTERNS), dtype=int)
 
     for _person in insider_data:
-        if (sales := _person.get("Sale")) is None:
+        if (sales := _person.get('Sale')) is None:
             continue
         sum_arr += [
             np.logical_and(~sales.Insider.isna(), stock_pattern[pat]).sum()
